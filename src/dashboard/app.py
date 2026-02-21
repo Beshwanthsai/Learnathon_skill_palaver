@@ -73,7 +73,7 @@ def main():
     
     # Sidebar
     st.sidebar.header("📊 Navigation")
-    pages = ["Overview", "Data Explorer", "Sales Predictions", "Feature Impact", "🎯 Innovation Showcase"]
+    pages = ["Overview", "Data Explorer", "Sales Predictions", "Feature Impact", "📅 Time-Series Forecast", "🎯 Innovation Showcase"]
     page = st.sidebar.radio("Go to", pages)
     
     # Paths
@@ -293,6 +293,71 @@ def main():
             else:
                 st.warning("⚠️ Feature impact data not available. Run feature analysis first.")
         
+        # Time-Series Forecast page (Prophet)
+        elif page == "📅 Time-Series Forecast":
+            st.header("📅 Time-Series Revenue Forecast (Prophet)")
+
+            st.markdown("""
+            **Facebook Prophet** decomposes revenue into **trend + seasonality + uncertainty bounds**.
+            It automatically handles quarterly seasonality and provides 95% confidence intervals
+            for every forecast period.
+            """)
+
+            # --- Load pre-computed forecast CSVs if they exist ---
+            total_csv  = Path("artifacts/prophet_forecast_total.csv")
+            brand_csv  = Path("artifacts/prophet_forecast_by_brand.csv")
+            total_png  = Path("artifacts/prophet_forecast_total.png")
+            brand_png  = Path("artifacts/prophet_forecast_by_brand.png")
+
+            if not total_csv.exists():
+                st.warning("""
+                ⚠️ Prophet forecasts not found. Run once to generate:
+                ```bash
+                python3 src/modeling/forecast_prophet.py \\
+                    --data data/synthetic_sales.csv --periods 4
+                ```
+                """)
+            else:
+                # Total forecast chart
+                st.subheader("🌐 Total Revenue — All Brands")
+                if total_png.exists():
+                    st.image(str(total_png), use_container_width=True)
+
+                total_fc = pd.read_csv(total_csv, parse_dates=["ds"])
+                future_rows = total_fc[total_fc["ds"] > total_fc["ds"].iloc[-5]]
+
+                st.subheader("📋 Next Quarters Forecast (Total)")
+                display_fc = future_rows[["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
+                display_fc.columns = ["Date", "Expected Revenue ($)", "Lower Bound ($)", "Upper Bound ($)"]
+                display_fc["Expected Revenue ($)"]  = display_fc["Expected Revenue ($)"].map("${:,.0f}".format)
+                display_fc["Lower Bound ($)"]       = display_fc["Lower Bound ($)"].map("${:,.0f}".format)
+                display_fc["Upper Bound ($)"]       = display_fc["Upper Bound ($)"].map("${:,.0f}".format)
+                st.dataframe(display_fc.reset_index(drop=True), use_container_width=True)
+
+                st.markdown("---")
+
+                # Per-brand chart
+                st.subheader("🏢 Revenue Forecast by Brand")
+                if brand_png.exists():
+                    st.image(str(brand_png), use_container_width=True)
+
+                if brand_csv.exists():
+                    brand_fc = pd.read_csv(brand_csv, parse_dates=["ds"])
+                    brand_selected = st.selectbox("Explore brand forecast table",
+                                                  sorted(brand_fc["brand"].unique()))
+                    bdf = brand_fc[brand_fc["brand"] == brand_selected].tail(8)
+                    bdf = bdf[["ds", "yhat", "yhat_lower", "yhat_upper"]].copy()
+                    bdf.columns = ["Date", "Expected ($)", "Lower ($)", "Upper ($)"]
+                    st.dataframe(bdf.reset_index(drop=True), use_container_width=True)
+
+                st.info("""
+                **How to read this forecast:**
+                - **Dark line** = Expected revenue
+                - **Shaded band** = 95% confidence interval (best case / worst case range)
+                - **Black dots** = Historical actual values Prophet was trained on
+                - Wider bands = more uncertainty further into the future
+                """)
+
         # Innovation Showcase page
         elif page == "🎯 Innovation Showcase":
             st.header("🎯 Hackathon Innovations")

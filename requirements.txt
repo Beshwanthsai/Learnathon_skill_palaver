@@ -8,3 +8,4 @@ seaborn
 pytest
 streamlit
 xgboost
+prophet
