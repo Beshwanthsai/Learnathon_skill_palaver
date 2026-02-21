@@ -430,15 +430,15 @@ def main():
                 if metrics:
                     st.markdown(_sec("Performance Metrics"), unsafe_allow_html=True)
                     lmap = {
-                        "r2":           ("Test R2",         "{:.4f}"),
-                        "mse":          ("Test MSE",        "${:,.0f}"),
-                        "mae":          ("Test MAE",        "${:,.0f}"),
-                        "rmse":         ("RMSE",            "${:,.0f}"),
-                        "mape":         ("MAPE",            "{:.2f}%"),
-                        "cv_r2":        ("CV R2 (5-fold)", "{:.4f}"),
-                        "cv_mse":       ("CV MSE",         "${:,.0f}"),
-                        "cv_mae":       ("CV MAE",         "${:,.0f}"),
-                        "std_residuals":("Residual Std Dev",     "${:,.0f}"),
+                        "r2":           ("Test R2",             "{:.4f}"),
+                        "mse":          ("Test MSE ($²)",       "{:,.0f}"),
+                        "mae":          ("Test MAE",            "${:,.0f}"),
+                        "rmse":         ("RMSE",                "${:,.0f}"),
+                        "mape":         ("MAPE",                "{:.2f}%"),
+                        "cv_r2":        ("CV R2 (5-fold)",      "{:.4f}"),
+                        "cv_mse":       ("CV MSE ($²)",         "{:,.0f}"),
+                        "cv_mae":       ("CV MAE",              "${:,.0f}"),
+                        "std_residuals":("Residual Std Dev",    "${:,.0f}"),
                     }
                     rows = [{"Metric": lmap[k][0], "Value": lmap[k][1].format(v)}
                             for k, v in metrics.items() if k in lmap]
@@ -920,12 +920,12 @@ def main():
                 st.markdown(_sec("Full Metrics Report"), unsafe_allow_html=True)
                 lmap = {
                     "r2":           "Test R2",
-                    "mse":          "Test MSE ($)",
+                    "mse":          "Test MSE ($²)",
                     "mae":          "Test MAE ($)",
                     "rmse":         "RMSE ($)",
                     "mape":         "MAPE (%)",
                     "cv_r2":        "CV R2 (5-fold)",
-                    "cv_mse":       "CV MSE ($)",
+                    "cv_mse":       "CV MSE ($²)",
                     "cv_mae":       "CV MAE ($)",
                     "std_residuals":"Residual Std Dev ($)",
                 }
