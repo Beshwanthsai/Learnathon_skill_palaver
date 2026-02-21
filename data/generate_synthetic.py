@@ -95,6 +95,16 @@ def main():
     df.to_csv(out, index=False)
     print(f"Wrote {len(df)} rows to {out}")
 
+    # Print summary statistics per brand
+    summary = df.groupby("brand").agg(
+        count=("sales_volume", "count"),
+        avg_price=("price", "mean"),
+        avg_sales=("sales_volume", "mean"),
+        total_revenue=("revenue", "sum"),
+    ).round(2)
+    print("\nDataset summary by brand:")
+    print(summary.to_string())
+
 
 if __name__ == "__main__":
     main()
