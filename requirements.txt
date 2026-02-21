@@ -7,4 +7,4 @@ matplotlib
 seaborn
 pytest
 streamlit
-streamlit
+xgboost
