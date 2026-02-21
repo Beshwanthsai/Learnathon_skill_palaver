@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor, VotingRegressor
-from sklearn.model_selection import train_test_split, cross_validate, KFold
+from sklearn.model_selection import train_test_split, cross_validate, TimeSeriesSplit
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import joblib
 try:
@@ -12,6 +12,7 @@ try:
     HAS_XGBOOST = True
 except ImportError:
     HAS_XGBOOST = False
+    print("⚠️ XGBoost not installed. Run: pip install xgboost")
 
 
 def prepare_features(df: pd.DataFrame):
@@ -41,19 +42,20 @@ def main():
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(args.data)
-    X, y = prepare_features(df)
+    # Sort by quarter so TimeSeriesSplit respects temporal order
+    df_sorted = pd.read_csv(args.data).sort_values("quarter").reset_index(drop=True)
+    X, y = prepare_features(df_sorted)
 
-    # 5-Fold Cross-Validation
-    print("🔄 Running 5-fold cross-validation...")
-    kfold = KFold(n_splits=5, shuffle=True, random_state=args.seed)
-    
-    # Base models
-    rf_model = RandomForestRegressor(n_estimators=100, max_depth=15, 
+    # 5-Fold Time-Series Cross-Validation (respects temporal order)
+    print("🔄 Running 5-fold TimeSeriesSplit cross-validation...")
+    tscv = TimeSeriesSplit(n_splits=5)
+
+    # Base model for CV
+    rf_model = RandomForestRegressor(n_estimators=100, max_depth=15,
                                      random_state=args.seed, n_jobs=-1)
-    
+
     # Cross-validation scores
-    cv_scores = cross_validate(rf_model, X, y, cv=kfold,
+    cv_scores = cross_validate(rf_model, X, y, cv=tscv,
                                scoring=['r2', 'neg_mean_squared_error', 'neg_mean_absolute_error'],
                                return_train_score=True)
     
@@ -90,24 +92,29 @@ def main():
     r2 = r2_score(y_test, preds)
     mae = mean_absolute_error(y_test, preds)
     
-    # Prediction intervals (using residuals)
+    # Heteroscedastic confidence intervals:
+    # Error grows proportionally with prediction magnitude.
+    # alpha = std(residual / prediction) — the relative error rate.
     residuals = y_test - preds
-    std_residuals = np.std(residuals)
-    
+    relative_errors = residuals / np.maximum(preds, 1)          # avoid div-by-zero
+    alpha = float(np.std(relative_errors))                      # relative std
+    global_std = float(np.std(residuals))                       # kept for reference
+
     print(f"\n📊 Test Set Performance:")
     print(f"   R² Score: {r2:.4f}")
     print(f"   MSE: {mse:.2f}")
     print(f"   MAE: {mae:.2f}")
-    print(f"   Std Dev (Residuals): {std_residuals:.2f}")
+    print(f"   Relative error α (heteroscedastic): {alpha:.4f}")
 
     # Save models
     joblib.dump(ensemble, outdir / "model.joblib")
-    joblib.dump(std_residuals, outdir / "residual_std.joblib")  # For confidence intervals
+    # Save both for confidence interval computation
+    joblib.dump({"alpha": alpha, "global_std": global_std}, outdir / "residual_std.joblib")
     
     # Save metrics
     metrics_df = pd.DataFrame({
-        "metric": ["r2", "mse", "mae", "cv_r2", "cv_mse", "cv_mae", "std_residuals"],
-        "value": [r2, mse, mae, cv_r2, cv_mse, cv_mae, std_residuals]
+        "metric": ["r2", "mse", "mae", "cv_r2", "cv_mse", "cv_mae", "ci_alpha"],
+        "value": [r2, mse, mae, cv_r2, cv_mse, cv_mae, alpha]
     })
     metrics_df.to_csv(outdir / "metrics.csv", index=False)
     
