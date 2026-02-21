@@ -36,12 +36,16 @@ def forecast_total(df: pd.DataFrame, periods: int, outdir: Path):
     agg = ts.groupby("ds")["revenue"].sum().reset_index()
     agg.columns = ["ds", "y"]
 
+    # yearly_seasonality=False: we only have 1 year of data — can't estimate yearly cycles
+    # additive mode: more stable than multiplicative with sparse data
+    # tight changepoint_prior: prevents overfitting on only 4 data points
     model = Prophet(
-        yearly_seasonality=True,
+        yearly_seasonality=False,
         weekly_seasonality=False,
         daily_seasonality=False,
-        seasonality_mode="multiplicative",
-        changepoint_prior_scale=0.1,
+        seasonality_mode="additive",
+        changepoint_prior_scale=0.01,
+        interval_width=0.95,
     )
     model.fit(agg)
 
@@ -85,12 +89,14 @@ def forecast_by_brand(df: pd.DataFrame, periods: int, outdir: Path):
         brand_df = ts[ts["brand"] == brand].groupby("ds")["revenue"].sum().reset_index()
         brand_df.columns = ["ds", "y"]
 
+        # Same conservative config as total forecast
         model = Prophet(
-            yearly_seasonality=True,
+            yearly_seasonality=False,
             weekly_seasonality=False,
             daily_seasonality=False,
-            seasonality_mode="multiplicative",
-            changepoint_prior_scale=0.05,
+            seasonality_mode="additive",
+            changepoint_prior_scale=0.01,
+            interval_width=0.95,
         )
         model.fit(brand_df)
 
