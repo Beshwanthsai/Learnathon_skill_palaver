@@ -741,9 +741,10 @@ def main():
 
             def _predict_spec(spec_dict):
                 """Predict revenue for a single phone spec dict, with 95% CI."""
-                row_df   = pd.DataFrame([spec_dict])
+                # Add dummy revenue so prepare_features can find the target column
+                row_df = pd.DataFrame([{**spec_dict, "revenue": 0.0, "sales_volume": 0}])
                 combined = pd.concat(
-                    [df.drop(columns=["sales_volume", "revenue", "predicted_revenue"], errors="ignore"),
+                    [df.drop(columns=["predicted_revenue"], errors="ignore"),
                      row_df],
                     ignore_index=True,
                 )
