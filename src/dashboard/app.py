@@ -433,6 +433,8 @@ def main():
                         "r2":           ("Test R2",         "{:.4f}"),
                         "mse":          ("Test MSE",        "${:,.0f}"),
                         "mae":          ("Test MAE",        "${:,.0f}"),
+                        "rmse":         ("RMSE",            "${:,.0f}"),
+                        "mape":         ("MAPE",            "{:.2f}%"),
                         "cv_r2":        ("CV R2 (5-fold)", "{:.4f}"),
                         "cv_mse":       ("CV MSE",         "${:,.0f}"),
                         "cv_mae":       ("CV MAE",         "${:,.0f}"),
@@ -896,24 +898,32 @@ def main():
             metrics = _load_metrics()
             if metrics:
                 st.markdown(_sec("Model Performance"), unsafe_allow_html=True)
-                m1, m2, m3 = st.columns(3, gap="large")
+                m1, m2, m3, m4, m5 = st.columns(5, gap="large")
                 with m1:
                     r2v = metrics.get("r2")
-                    st.metric("Test R2",       f"{r2v:.4f}" if r2v else "â€”",
+                    st.metric("Test R2",       f"{r2v:.4f}" if r2v else "—",
                               delta="Excellent" if r2v and r2v > 0.9 else None)
                 with m2:
                     cvr = metrics.get("cv_r2")
-                    st.metric("CV R2 (5-fold)", f"{cvr:.4f}" if cvr else "â€”",
+                    st.metric("CV R2 (5-fold)", f"{cvr:.4f}" if cvr else "—",
                               delta="Robust" if cvr else None)
                 with m3:
                     mae = metrics.get("mae")
-                    st.metric("Test MAE ($)",   f"${mae:,.0f}" if mae else "â€”")
+                    st.metric("Test MAE ($)",   f"${mae:,.0f}" if mae else "—")
+                with m4:
+                    rmse = metrics.get("rmse")
+                    st.metric("RMSE ($)",       f"${rmse:,.0f}" if rmse else "—")
+                with m5:
+                    mape = metrics.get("mape")
+                    st.metric("MAPE (%)",       f"{mape:.2f}%" if mape else "—")
 
                 st.markdown(_sec("Full Metrics Report"), unsafe_allow_html=True)
                 lmap = {
                     "r2":           "Test R2",
                     "mse":          "Test MSE ($)",
                     "mae":          "Test MAE ($)",
+                    "rmse":         "RMSE ($)",
+                    "mape":         "MAPE (%)",
                     "cv_r2":        "CV R2 (5-fold)",
                     "cv_mse":       "CV MSE ($)",
                     "cv_mae":       "CV MAE ($)",

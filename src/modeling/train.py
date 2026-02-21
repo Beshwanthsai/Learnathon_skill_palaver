@@ -81,10 +81,12 @@ def main():
     model.fit(X_train, y_train)
     preds = model.predict(X_test)
 
-    r2  = r2_score(y_test, preds)
-    mse = mean_squared_error(y_test, preds)
-    mae = mean_absolute_error(y_test, preds)
-    print(f"Test R²={r2:.4f}  MSE={mse:.0f}  MAE={mae:.0f}")
+    r2   = r2_score(y_test, preds)
+    mse  = mean_squared_error(y_test, preds)
+    mae  = mean_absolute_error(y_test, preds)
+    rmse = float(np.sqrt(mse))
+    mape = float(np.mean(np.abs((y_test - preds) / np.maximum(np.abs(y_test), 1))) * 100)
+    print(f"Test R²={r2:.4f}  MSE={mse:.0f}  MAE={mae:.0f}  RMSE={rmse:.0f}  MAPE={mape:.2f}%")
 
     # Heteroscedastic CI: error scales proportionally with prediction size
     # alpha = relative std of residuals → used in predict.py as CI width factor
@@ -97,8 +99,8 @@ def main():
                 outdir / "residual_std.joblib")
 
     pd.DataFrame({
-        "metric": ["r2", "mse", "mae", "cv_r2", "cv_mse", "cv_mae", "ci_alpha"],
-        "value":  [r2, mse, mae, cv_r2, cv_mse, cv_mae, alpha],
+        "metric": ["r2", "mse", "mae", "rmse", "mape", "cv_r2", "cv_mse", "cv_mae", "ci_alpha"],
+        "value":  [r2, mse, mae, rmse, mape, cv_r2, cv_mse, cv_mae, alpha],
     }).to_csv(outdir / "metrics.csv", index=False)
 
     print(f"Saved model, metrics, and CI params to {outdir}/")
