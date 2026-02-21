@@ -10,7 +10,15 @@ import seaborn as sns
 
 
 def prepare_X(df: pd.DataFrame):
-    return pd.get_dummies(df, columns=["brand", "os", "quarter"], drop_first=True).fillna(0)
+    df2 = df.copy()
+    # Add temporal features to match training pipeline
+    df2['quarter_sin'] = np.sin(2 * np.pi * df2['quarter'] / 4)
+    df2['quarter_cos'] = np.cos(2 * np.pi * df2['quarter'] / 4)
+    df2 = pd.get_dummies(df2, columns=["brand", "os", "quarter"], drop_first=True)
+    # Drop target-related columns to prevent data leakage in SHAP
+    leakage_cols = ["sales_volume", "revenue", "predicted_revenue"]
+    df2 = df2.drop(columns=[c for c in leakage_cols if c in df2.columns], errors="ignore")
+    return df2.fillna(0)
 
 
 def main():
