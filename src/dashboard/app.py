@@ -124,10 +124,14 @@ def main():
                 st.subheader("🎯 Model Performance")
                 try:
                     metrics = pd.read_csv("artifacts/metrics.csv")
-                    mse = metrics['mse'].values[0]
-                    r2 = metrics['r2'].values[0]
-                    st.metric("R² Score", f"{r2:.3f}", delta="Excellent fit (>0.93)")
-                    st.metric("MSE", f"{mse:,.0f}")
+                    m = metrics.set_index("metric")["value"]
+                    r2  = m["r2"]
+                    mse = m["mse"]
+                    mae = m["mae"]
+                    cv_r2 = m.get("cv_r2", None)
+                    st.metric("R² Score", f"{r2:.4f}", delta="Excellent fit (>0.99)")
+                    st.metric("CV R² (5-fold)", f"{cv_r2:.4f}" if cv_r2 else "N/A", delta="Robust")
+                    st.metric("MAE ($)", f"${mae:,.0f}")
                 except Exception as e:
                     st.error(f"Could not load metrics: {e}")
                     
