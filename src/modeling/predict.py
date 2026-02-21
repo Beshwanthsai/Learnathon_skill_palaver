@@ -15,12 +15,17 @@ def main():
 
     model = joblib.load(args.model)
     
-    # Load residual std for confidence intervals (if available)
+    # Load heteroscedastic CI params saved during training
     residual_std_path = Path(args.model).parent / "residual_std.joblib"
     try:
-        std_residuals = joblib.load(residual_std_path)
+        ci_params = joblib.load(residual_std_path)
+        # Support old format (plain float) and new format (dict)
+        if isinstance(ci_params, dict):
+            ci_alpha = ci_params["alpha"]
+        else:
+            ci_alpha = None  # old fixed-std format — ignore
     except:
-        std_residuals = None
+        ci_alpha = None
     
     df = pd.read_csv(args.input)
 
@@ -38,19 +43,19 @@ def main():
     # Predictions
     preds = model.predict(X)
     
-    # Confidence intervals (95%)
-    if std_residuals is not None:
-        z_score = 1.96  # 95% confidence
-        df_out = df.copy()
-        df_out["predicted_revenue"] = preds
-        df_out["prediction_lower_95"] = preds - (z_score * std_residuals)
-        df_out["prediction_upper_95"] = preds + (z_score * std_residuals)
-        df_out["prediction_std_dev"] = std_residuals
-        print(f"✅ Predictions with 95% confidence intervals")
+    # Heteroscedastic confidence intervals (95%)
+    # Width scales with the prediction magnitude: CI = pred ± 1.96 * alpha * pred
+    df_out = df.copy()
+    df_out["predicted_revenue"] = preds
+    if ci_alpha is not None:
+        z_score = 1.96
+        half_width = z_score * ci_alpha * np.abs(preds)   # proportional to prediction
+        df_out["prediction_lower_95"] = preds - half_width
+        df_out["prediction_upper_95"] = preds + half_width
+        df_out["prediction_ci_width"]  = 2 * half_width
+        print("✅ Predictions with heteroscedastic 95% confidence intervals")
     else:
-        df_out = df.copy()
-        df_out["predicted_revenue"] = preds
-        print(f"⚠️ No confidence intervals available")
+        print("⚠️ No confidence interval parameters found — point predictions only")
 
     if args.out:
         df_out.to_csv(args.out, index=False)
