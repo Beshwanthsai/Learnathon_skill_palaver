@@ -182,6 +182,20 @@ html, body, [class*="css"] {
 
 /* â”€â”€ Hide Streamlit chrome â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 #MainMenu, footer, header { visibility: hidden; }
+
+/* ── Suggestion cards ────────────────────────────────────────────────────── */
+.sugg-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--green);
+  border-radius: var(--radius-md);
+  padding: 20px 18px;
+  text-align: center;
+}
+.sugg-icon  { font-size: 22px; color: var(--green); margin-bottom: 6px; }
+.sugg-label { font-size: 12.5px; font-weight: 600; color: var(--txt-primary); margin-bottom: 10px; }
+.sugg-gain  { font-size: 22px; font-weight: 700; color: var(--green); letter-spacing: -0.03em; }
+.sugg-new   { font-size: 11px; color: var(--txt-secondary); margin-top: 4px; }
 </style>
 """
 
@@ -324,6 +338,7 @@ def main():
             "Sales Predictions",
             "Feature Impact",
             "Time-Series Forecast",
+            "Product Advisor",
             "Model Insights",
         ]
         _NAV_INTERNAL = {
@@ -331,7 +346,8 @@ def main():
             "Data Explorer":        "Data Explorer",
             "Sales Predictions":    "Sales Predictions",
             "Feature Impact":       "Feature Impact",
-            "Time-Series Forecast": "ðŸ“… Time-Series Forecast",
+            "Time-Series Forecast": "📅 Time-Series Forecast",
+            "Product Advisor":      "Product Advisor",
             "Model Insights":       "ðŸŽ¯ Innovation Showcase",
         }
         sel   = st.radio("Navigation", _NAV_DISPLAY, label_visibility="collapsed")
@@ -633,7 +649,7 @@ def main():
         # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         # TIME-SERIES FORECAST
         # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        elif page == "ðŸ“… Time-Series Forecast":
+        elif page == "📅 Time-Series Forecast":
             st.markdown(
                 '<p class="pg-title">Time-Series Revenue Forecast</p>'
                 '<p class="pg-sub">'
@@ -704,7 +720,134 @@ def main():
         # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
         # MODEL INSIGHTS  (was: Innovation Showcase)
         # â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-        elif page == "ðŸŽ¯ Innovation Showcase":
+        # ─────────────────────────────────────────────────────────
+        # PRODUCT ADVISOR
+        # ─────────────────────────────────────────────────────────
+        elif page == "Product Advisor":
+            st.markdown(
+                '<p class="pg-title">Product Advisor</p>'
+                '<p class="pg-sub">Configure a phone spec and get an instant revenue prediction '
+                'plus ranked suggestions for which spec changes would increase revenue the most.</p>',
+                unsafe_allow_html=True,
+            )
+
+            # Load CI alpha from saved artifact
+            _ci_alpha = 0.06
+            try:
+                _rs = joblib.load("artifacts/residual_std.joblib")
+                _ci_alpha = _rs.get("alpha", 0.06)
+            except Exception:
+                pass
+
+            def _predict_spec(spec_dict):
+                """Predict revenue for a single phone spec dict, with 95% CI."""
+                row_df   = pd.DataFrame([spec_dict])
+                combined = pd.concat(
+                    [df.drop(columns=["sales_volume", "revenue", "predicted_revenue"], errors="ignore"),
+                     row_df],
+                    ignore_index=True,
+                )
+                X_all, _ = prepare_features(combined)
+                X_row    = X_all.tail(1).reindex(columns=model.feature_names_in_, fill_value=0)
+                p        = float(model.predict(X_row)[0])
+                hw       = 1.96 * _ci_alpha * abs(p)
+                return p, p - hw, p + hw
+
+            col_in, col_out = st.columns([1, 1.1], gap="large")
+
+            with col_in:
+                st.markdown(_sec("Phone Specification"), unsafe_allow_html=True)
+                _brands    = sorted(df["brand"].unique().tolist())
+                _oses      = sorted(df["os"].unique().tolist())
+                _brand     = st.selectbox("Brand", _brands)
+                _os_choice = st.selectbox("Operating System", _oses)
+                _price     = st.slider("Price ($)", int(df["price"].min()), int(df["price"].max()),
+                                       int(df["price"].median()))
+                _ram       = st.select_slider("RAM (GB)", options=[2, 4, 6, 8, 12, 16, 32], value=8)
+                _storage   = st.select_slider("Storage (GB)", options=[32, 64, 128, 256, 512], value=128)
+                _battery   = st.slider("Battery (mAh)", int(df["battery"].min()), int(df["battery"].max()),
+                                       int(df["battery"].median()))
+                _camera    = st.slider("Camera (MP)", int(df["camera_mp"].min()), int(df["camera_mp"].max()),
+                                       int(df["camera_mp"].median()))
+                _promo     = 1 if st.checkbox("Promotional Discount Active") else 0
+                _quarter   = st.selectbox("Quarter", [1, 2, 3, 4])
+
+            _base_spec = {
+                "brand": _brand, "os": _os_choice, "price": _price, "ram": _ram,
+                "storage": _storage, "battery": _battery, "camera_mp": _camera,
+                "promo": _promo, "sentiment": 0.5, "quarter": _quarter,
+            }
+
+            _pred, _lower, _upper = _predict_spec(_base_spec)
+
+            with col_out:
+                st.markdown(_sec("Revenue Forecast"), unsafe_allow_html=True)
+                st.markdown(
+                    _kpi("Predicted Revenue", f"${_pred:,.0f}",
+                         note=f"95% CI: ${_lower:,.0f} \u2014 ${_upper:,.0f}"),
+                    unsafe_allow_html=True,
+                )
+                st.markdown("<br/>", unsafe_allow_html=True)
+                st.markdown(
+                    _kpi("Confidence Range Width", f"${_upper - _lower:,.0f}",
+                         note="Narrower = higher model certainty"),
+                    unsafe_allow_html=True,
+                )
+
+            # Suggestions
+            st.markdown("<hr class='div'/>", unsafe_allow_html=True)
+            st.markdown(_sec("Suggestions to Boost Revenue"), unsafe_allow_html=True)
+
+            _candidates = [
+                {"label": "Add promotional discount",    "field": "promo",     "new_val": 1,    "ok": _promo == 0},
+                {"label": "Upgrade RAM to 16 GB",         "field": "ram",       "new_val": 16,   "ok": _ram < 16},
+                {"label": "Upgrade storage to 256 GB",    "field": "storage",   "new_val": 256,  "ok": _storage < 256},
+                {"label": "Upgrade storage to 512 GB",    "field": "storage",   "new_val": 512,  "ok": _storage < 512},
+                {"label": "Boost camera to 48 MP",        "field": "camera_mp", "new_val": 48,   "ok": _camera < 48},
+                {"label": "Increase battery to 5000 mAh", "field": "battery",   "new_val": 5000, "ok": _battery < 5000},
+                {"label": "Launch in Q4 (peak quarter)",  "field": "quarter",   "new_val": 4,    "ok": _quarter != 4},
+            ]
+
+            _suggestions = []
+            for _c in _candidates:
+                if not _c["ok"]:
+                    continue
+                _mod_spec = {**_base_spec, _c["field"]: _c["new_val"]}
+                _mod_pred, _, _ = _predict_spec(_mod_spec)
+                _gain = _mod_pred - _pred
+                if _gain > 0:
+                    _suggestions.append({"label": _c["label"], "gain": _gain, "new_pred": _mod_pred})
+
+            _suggestions.sort(key=lambda x: x["gain"], reverse=True)
+
+            if _suggestions:
+                _top   = _suggestions[:3]
+                _scols = st.columns(len(_top), gap="medium")
+                for _i, _s in enumerate(_top):
+                    with _scols[_i]:
+                        st.markdown(
+                            f'<div class="sugg-card">'
+                            f'<div class="sugg-icon">&#8593;</div>'
+                            f'<div class="sugg-label">{_s["label"]}</div>'
+                            f'<div class="sugg-gain">+${_s["gain"]:,.0f}</div>'
+                            f'<div class="sugg-new">New forecast: ${_s["new_pred"]:,.0f}</div>'
+                            f'</div>',
+                            unsafe_allow_html=True,
+                        )
+                if len(_suggestions) > 3:
+                    st.markdown("<br/>", unsafe_allow_html=True)
+                    _more = pd.DataFrame(_suggestions[3:])
+                    _more["gain"]     = _more["gain"].map("+${:,.0f}".format)
+                    _more["new_pred"] = _more["new_pred"].map("${:,.0f}".format)
+                    _more.columns = ["Suggestion", "Revenue Gain", "New Forecast"]
+                    st.dataframe(_more, use_container_width=True, hide_index=True)
+            else:
+                st.markdown(
+                    _notice("This configuration is already near-optimal. No further gains detected.", "success"),
+                    unsafe_allow_html=True,
+                )
+
+        elif page == "Innovation Showcase":
             st.markdown(
                 '<p class="pg-title">Model Insights</p>'
                 '<p class="pg-sub">Technical innovations, validation methodology, and full metrics report.</p>',
