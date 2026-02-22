@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split, cross_validate, TimeSeries
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 import joblib
 
+#loads the xg-boost library if installed
 try:
     from xgboost import XGBRegressor
     HAS_XGBOOST = True
@@ -19,13 +20,16 @@ def prepare_features(df: pd.DataFrame):
     df2 = df.copy()
 
     # Sinusoidal encoding keeps Q4 and Q1 adjacent on a circle
+    #converting the quarter feature into two features: quarter_sin and quarter_cos
     df2['quarter_sin'] = np.sin(2 * np.pi * df2['quarter'] / 4)
     df2['quarter_cos'] = np.cos(2 * np.pi * df2['quarter'] / 4)
 
     # Convert text columns (brand, os, quarter) to numbers
+    #convert categorical variables into dummy/indicator variables using one-hot encoding
     df2 = pd.get_dummies(df2, columns=["brand", "os", "quarter"], drop_first=True)
 
     # Drop target and leakage columns — model must not see the answer
+    
     X = df2.drop(["sales_volume", "revenue"], axis=1, errors="ignore")
     X = X.fillna(0).astype("float64")
     y = df2["revenue"].fillna(0).astype(float) if "revenue" in df2.columns else pd.Series(0.0, index=df2.index)
@@ -58,12 +62,18 @@ def main():
     cv_scores = cross_validate(rf_cv, X, y, cv=tscv,
                                scoring=['r2', 'neg_mean_squared_error',
                                         'neg_mean_absolute_error'])
+    #n-estimators is the number of trees in the random forest
+    #max-depth is the maximum depth of the tree
+    
+    
+    
     cv_r2  = cv_scores['test_r2'].mean()
     cv_mse = -cv_scores['test_neg_mean_squared_error'].mean()
     cv_mae = -cv_scores['test_neg_mean_absolute_error'].mean()
     print(f"CV  R²={cv_r2:.4f}  MSE={cv_mse:.0f}  MAE={cv_mae:.0f}")
 
     # 80/20 train-test split for final evaluation
+    #80 percent of the data is used for training and 20 percent for testing
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=args.seed)
 

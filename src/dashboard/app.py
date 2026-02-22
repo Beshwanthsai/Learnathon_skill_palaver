@@ -20,7 +20,7 @@ from src.modeling.train import prepare_features
 
 # â”€â”€ Page config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 st.set_page_config(
-    page_title="SalesIQ Â· AI Forecasting",
+    page_title="SalesIQ AI Forecasting",
     layout="wide",
     initial_sidebar_state="expanded",
 )
