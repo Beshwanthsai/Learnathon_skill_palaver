@@ -348,7 +348,7 @@ def main():
             "Feature Impact":       "Feature Impact",
             "Time-Series Forecast": "📅 Time-Series Forecast",
             "Product Advisor":      "Product Advisor",
-            "Model Insights":       "ðŸŽ¯ Innovation Showcase",
+            "Model Insights":       "Model Insights",
         }
         sel   = st.radio("Navigation", _NAV_DISPLAY, label_visibility="collapsed")
         page  = _NAV_INTERNAL[sel]
@@ -850,7 +850,7 @@ def main():
                     unsafe_allow_html=True,
                 )
 
-        elif page == "Innovation Showcase":
+        elif page == "Model Insights":
             st.markdown(
                 '<p class="pg-title">Model Insights</p>'
                 '<p class="pg-sub">Technical innovations, validation methodology, and full metrics report.</p>',
@@ -868,7 +868,7 @@ def main():
                     unsafe_allow_html=True,
                 )
                 st.markdown(
-                    _feat("Ensemble Learning â€” RF + XGBoost", [
+                    _feat("Ensemble Learning — RF + XGBoost", [
                         "VotingRegressor averages both models' predictions",
                         "Reduces individual model bias and variance",
                         "XGBoost activates automatically when installed",
@@ -887,7 +887,7 @@ def main():
                 st.markdown(
                     _feat("Sinusoidal Temporal Feature Engineering", [
                         "Quarter encoded as sin / cos to preserve cyclical continuity",
-                        "Prevents discontinuity at Q4 â†’ Q1 boundary",
+                        "Prevents discontinuity at Q4 → Q1 boundary",
                         "Foundation for downstream time-series models",
                     ]),
                     unsafe_allow_html=True,
@@ -959,9 +959,9 @@ def main():
             st.markdown(
                 _notice(
                     "<strong>Potential improvements for production:</strong><br/>"
-                    "TimeSeriesSplit validation &nbsp;Â·&nbsp; Multi-year real data &nbsp;Â·&nbsp; "
-                    "LSTM / Transformer forecasting &nbsp;Â·&nbsp; MLflow experiment tracking &nbsp;Â·&nbsp; "
-                    "Real-time prediction API &nbsp;Â·&nbsp; Model drift monitoring &nbsp;Â·&nbsp; "
+                    "TimeSeriesSplit validation &nbsp;·&nbsp; Multi-year real data &nbsp;·&nbsp; "
+                    "LSTM / Transformer forecasting &nbsp;·&nbsp; MLflow experiment tracking &nbsp;·&nbsp; "
+                    "Real-time prediction API &nbsp;·&nbsp; Model drift monitoring &nbsp;·&nbsp; "
                     "Hierarchical brand forecasting"
                 ),
                 unsafe_allow_html=True,
