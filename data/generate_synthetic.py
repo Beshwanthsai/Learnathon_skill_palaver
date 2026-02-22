@@ -49,14 +49,14 @@ def generate(n=1000, seed=42):
 
         demand = (
             base
-            + (12 - price / 100) * 50  # Price elasticity
-            + ram * 20
-            + storage / 2
-            + (battery - 3000) / 10
-            + camera_mp * 5
-            + promo * 200
-            + sentiment * 50
-            + rng.normal(0, 100)
+            + (10 - price / 200) * 30   # Weaker price elasticity (was quadratic-dominant)
+            + ram * 100                  # RAM matters significantly (8GB → +800)
+            + storage * 3               # Storage matters (256GB → +768)
+            + (battery - 3000) / 4      # Battery matters (5500mAh → +625)
+            + camera_mp * 20            # Camera matters (108MP → +2160)
+            + promo * 500               # Promotions have strong effect
+            + sentiment * 150           # Sentiment has meaningful impact
+            + rng.normal(0, 300)        # Realistic noise
         )
 
         revenue = max(demand, 0) * max(price, 50)
